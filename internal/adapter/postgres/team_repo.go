@@ -26,10 +26,10 @@ func NewTeamRepo(
 }
 
 func (t *PostgresTeamTable) Create(ctx context.Context, team *domain.Team) (*domain.Team, error) {
+	insertTeamQuery := fmt.Sprintf("INSERT INTO %s (team_name) VALUES ($1) RETURNING team_name", t.TeamTable)
 	row := t.Conn.QueryRow(
 		ctx,
-		"INSERT INTO $1 (team_name) VALUES ($2) RETURNING team_name;",
-		t.TeamTable,
+		insertTeamQuery,
 		team.Name,
 	)
 
@@ -47,11 +47,15 @@ func (t *PostgresTeamTable) Create(ctx context.Context, team *domain.Team) (*dom
 	}
 	newTeam := domain.Team{Name: team_name, Members: make([]domain.User, 0, len(team.Members))}
 
+	insertUser := fmt.Sprintf(
+		"INSERT INTO %v (user_id, username, is_active, team_name) VALUES ($1, $2, $3, $4) RETURNING user_id, username, is_active, team_name",
+		t.UsersTable,
+	)
 	for _, member := range team.Members {
 		row := t.Conn.QueryRow(
 			ctx,
-			"INSERT INTO $1 (user_id, username, is_active, team_name) VALUES ($2, $3, $4, $5) RETURNING user_id, username, is_active, team_name;",
-			t.UsersTable, member.Id, member.Name, member.IsActive, member.Team,
+			insertUser,
+			member.Id, member.Name, member.IsActive, member.Team,
 		)
 
 		var user domain.User

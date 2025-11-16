@@ -51,7 +51,7 @@ components:
           message: resource not found
     TeamMember:
       type: object
-      required: [ user_id, username, is_active ]
+      required: [user_id, username, is_active]
       properties:
         user_id:
           type: string
@@ -61,17 +61,17 @@ components:
           type: boolean
     Team:
       type: object
-      required: [ team_name, members]
+      required: [team_name, members]
       properties:
         team_name:
           type: string
         members:
           type: array
           items:
-            $ref: '#/components/schemas/TeamMember'
+            $ref: "#/components/schemas/TeamMember"
     User:
       type: object
-      required: [ user_id, username, team_name, is_active ]
+      required: [user_id, username, team_name, is_active]
       properties:
         user_id:
           type: string
@@ -83,7 +83,14 @@ components:
           type: boolean
     PullRequest:
       type: object
-      required: [ pull_request_id, pull_request_name, author_id, status, assigned_reviewers]
+      required:
+        [
+          pull_request_id,
+          pull_request_name,
+          author_id,
+          status,
+          assigned_reviewers,
+        ]
       properties:
         pull_request_id:
           type: string
@@ -109,7 +116,7 @@ components:
           nullable: true
     PullRequestShort:
       type: object
-      required: [ pull_request_id, pull_request_name, author_id, status]
+      required: [pull_request_id, pull_request_name, author_id, status]
       properties:
         pull_request_id:
           type: string
@@ -131,7 +138,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Team'
+              $ref: "#/components/schemas/Team"
             example:
               team_name: payments
               members:
@@ -142,7 +149,7 @@ paths:
                   username: Bob
                   is_active: true
       responses:
-        '201':
+        "201":
           description: Команда создана
           content:
             application/json:
@@ -150,7 +157,7 @@ paths:
                 type: object
                 properties:
                   team:
-                    $ref: '#/components/schemas/Team'
+                    $ref: "#/components/schemas/Team"
               example:
                 team:
                   team_name: backend
@@ -161,11 +168,11 @@ paths:
                     - user_id: u2
                       username: Bob
                       is_active: true
-        '400':
+        "400":
           description: Команда уже существует
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
               example:
                 error:
                   code: TEAM_EXISTS
@@ -176,14 +183,14 @@ paths:
       tags: [Teams]
       summary: Получить команду с участниками
       parameters:
-        - $ref: '#/components/parameters/TeamNameQuery'
+        - $ref: "#/components/parameters/TeamNameQuery"
       responses:
-        '200':
+        "200":
           description: Объект команды
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Team'
+                $ref: "#/components/schemas/Team"
               example:
                 team_name: backend
                 members:
@@ -193,11 +200,11 @@ paths:
                   - user_id: u2
                     username: Bob
                     is_active: true
-        '404':
+        "404":
           description: Команда не найдена
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   /users/setIsActive:
     post:
@@ -209,7 +216,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ user_id, is_active ]
+              required: [user_id, is_active]
               properties:
                 user_id:
                   type: string
@@ -219,7 +226,7 @@ paths:
               user_id: u2
               is_active: false
       responses:
-        '200':
+        "200":
           description: Обновлённый пользователь
           content:
             application/json:
@@ -227,18 +234,18 @@ paths:
                 type: object
                 properties:
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: "#/components/schemas/User"
               example:
                 user:
                   user_id: u2
                   username: Bob
                   team_name: backend
                   is_active: false
-        '404':
+        "404":
           description: Пользователь не найден
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   /pullRequest/create:
     post:
@@ -250,7 +257,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ pull_request_id, pull_request_name, author_id ]
+              required: [pull_request_id, pull_request_name, author_id]
               properties:
                 pull_request_id: { type: string }
                 pull_request_name: { type: string }
@@ -260,7 +267,7 @@ paths:
               pull_request_name: Add search
               author_id: u1
       responses:
-        '201':
+        "201":
           description: PR создан
           content:
             application/json:
@@ -268,7 +275,7 @@ paths:
                 type: object
                 properties:
                   pr:
-                    $ref: '#/components/schemas/PullRequest'
+                    $ref: "#/components/schemas/PullRequest"
               example:
                 pr:
                   pull_request_id: pr-1001
@@ -276,16 +283,16 @@ paths:
                   author_id: u1
                   status: OPEN
                   assigned_reviewers: [u2, u3]
-        '404':
+        "404":
           description: Автор/команда не найдены
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-        '409':
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
           description: PR уже существует
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
               example:
                 error: { code: PR_EXISTS, message: PR id already exists }
 
@@ -299,13 +306,13 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ pull_request_id ]
+              required: [pull_request_id]
               properties:
                 pull_request_id: { type: string }
             example:
               pull_request_id: pr-1001
       responses:
-        '200':
+        "200":
           description: PR в состоянии MERGED
           content:
             application/json:
@@ -313,7 +320,7 @@ paths:
                 type: object
                 properties:
                   pr:
-                    $ref: '#/components/schemas/PullRequest'
+                    $ref: "#/components/schemas/PullRequest"
               example:
                 pr:
                   pull_request_id: pr-1001
@@ -322,11 +329,11 @@ paths:
                   status: MERGED
                   assigned_reviewers: [u2, u3]
                   mergedAt: 2025-10-24T12:34:56Z
-        '404':
+        "404":
           description: PR не найден
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   /pullRequest/reassign:
     post:
@@ -338,7 +345,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ pull_request_id, old_user_id ]
+              required: [pull_request_id, old_user_id]
               properties:
                 pull_request_id: { type: string }
                 old_user_id: { type: string }
@@ -346,7 +353,7 @@ paths:
               pull_request_id: pr-1001
               old_reviewer_id: u2
       responses:
-        '200':
+        "200":
           description: Переназначение выполнено
           content:
             application/json:
@@ -355,7 +362,7 @@ paths:
                 required: [pr, replaced_by]
                 properties:
                   pr:
-                    $ref: '#/components/schemas/PullRequest'
+                    $ref: "#/components/schemas/PullRequest"
                   replaced_by:
                     type: string
                     description: user_id нового ревьювера
@@ -367,51 +374,60 @@ paths:
                   status: OPEN
                   assigned_reviewers: [u3, u5]
                 replaced_by: u5
-        '404':
+        "404":
           description: PR или пользователь не найден
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-        '409':
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
           description: Нарушение доменных правил переназначения
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
               examples:
                 merged:
                   summary: Нельзя менять после MERGED
                   value:
-                    error: { code: PR_MERGED, message: cannot reassign on merged PR }
+                    error:
+                      { code: PR_MERGED, message: cannot reassign on merged PR }
                 notAssigned:
                   summary: Пользователь не был назначен ревьювером
                   value:
-                    error: { code: NOT_ASSIGNED, message: reviewer is not assigned to this PR }
+                    error:
+                      {
+                        code: NOT_ASSIGNED,
+                        message: reviewer is not assigned to this PR,
+                      }
                 noCandidate:
                   summary: Нет доступных кандидатов
                   value:
-                    error: { code: NO_CANDIDATE, message: no active replacement candidate in team }
+                    error:
+                      {
+                        code: NO_CANDIDATE,
+                        message: no active replacement candidate in team,
+                      }
 
   /users/getReview:
     get:
       tags: [Users]
       summary: Получить PR'ы, где пользователь назначен ревьювером
       parameters:
-        - $ref: '#/components/parameters/UserIdQuery'
+        - $ref: "#/components/parameters/UserIdQuery"
       responses:
-        '200':
+        "200":
           description: Список PR'ов пользователя
           content:
             application/json:
               schema:
                 type: object
-                required: [ user_id, pull_requests ]
+                required: [user_id, pull_requests]
                 properties:
                   user_id:
                     type: string
                   pull_requests:
                     type: array
                     items:
-                      $ref: '#/components/schemas/PullRequestShort'
+                      $ref: "#/components/schemas/PullRequestShort"
               example:
                 user_id: u2
                 pull_requests:

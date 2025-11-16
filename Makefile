@@ -1,7 +1,10 @@
+ENV_FILE?=.env
+include $(ENV_FILE)
+export
+
 export CGO_ENABLED=0
 export GOOS=linux
 
-ENV_FILE?=.env
 
 build:
 	go build -ldflags="-s -w" -o bin/restapi ./cmd/restapi
@@ -15,7 +18,7 @@ logs:
 test: run
 	go test -count=1 ./tests
 
-auto_test: test clean_down
+auto_test: clean_down test
 
 clean_down:
 	docker compose --env-file $(ENV_FILE) down -v

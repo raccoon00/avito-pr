@@ -10,7 +10,7 @@ func Run(s *service.Service) {
 
 	gs := GinService{srv: s}
 
-	r.GET("/team/add", gs.TeamAdd)
+	r.POST("/team/add", gs.TeamAdd)
 
 	r.Run()
 }
