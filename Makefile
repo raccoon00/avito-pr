@@ -8,7 +8,14 @@ build:
 
 run: build
 	docker compose --env-file $(ENV_FILE) up --build -d
+
+logs:
 	docker compose logs -f
 
+test: run
+	go test -count=1 ./tests
+
+auto_test: test clean_down
+
 clean_down:
-	docker compose down -v
+	docker compose --env-file $(ENV_FILE) down -v
