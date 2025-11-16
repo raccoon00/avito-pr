@@ -18,6 +18,7 @@ func CreateService(
 	}
 }
 
-func (s *Service) AddTeam(ctx context.Context, team domain.Team) error {
-	return s.TeamRepo.Create(ctx, team)
+func (s *Service) AddTeam(ctx context.Context, team *domain.Team) (domain.Team, error) {
+	insertedTeam, err := s.TeamRepo.Create(ctx, team)
+	return *insertedTeam, err
 }

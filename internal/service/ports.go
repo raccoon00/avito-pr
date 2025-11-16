@@ -7,5 +7,5 @@ import (
 )
 
 type TeamRepository interface {
-	Create(ctx context.Context, team domain.Team) error
+	Create(ctx context.Context, team *domain.Team) (*domain.Team, error)
 }

@@ -1,7 +1,7 @@
 package domain
 
 type User struct {
-	Id       int
+	Id       string
 	Name     string
 	Team     string
 	IsActive bool
