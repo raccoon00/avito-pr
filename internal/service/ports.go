@@ -21,4 +21,5 @@ type PullRequestRepository interface {
 	Create(ctx context.Context, pr *domain.PullRequest) (*domain.PullRequest, error)
 	GetByID(ctx context.Context, prID string) (*domain.PullRequest, error)
 	Exists(ctx context.Context, prID string) (bool, error)
+	Update(ctx context.Context, pr *domain.PullRequest) (*domain.PullRequest, error)
 }

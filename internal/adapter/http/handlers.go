@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -257,6 +258,140 @@ func (s *GinService) CreatePullRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
+		"pr": responsePR,
+	})
+}
+
+type ReassignReviewerRequest struct {
+	PullRequestID string `json:"pull_request_id" binding:"required"`
+	OldUserID     string `json:"old_user_id" binding:"required"`
+}
+
+type ReassignReviewerResponse struct {
+	PR         PullRequestResponse `json:"pr"`
+	ReplacedBy string              `json:"replaced_by"`
+}
+
+func (s *GinService) ReassignReviewer(c *gin.Context) {
+	ctx := context.Background()
+
+	var req ReassignReviewerRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: err.Error(),
+		}})
+		return
+	}
+
+	pr, newReviewerID, err := s.srv.ReassignReviewer(ctx, req.PullRequestID, req.OldUserID)
+	if err != nil {
+		var prMergedErr *domain.PRMergedError
+		var notAssignedErr *domain.ReviewerNotAssignedError
+		var userNotFoundErr *domain.UserNotFoundError
+		var noCandidateErr *domain.NoReviewersAvailableError
+		if errors.As(err, &prMergedErr) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: ErrorBody{
+				Code:    PR_MERGED,
+				Message: "cannot reassign on merged PR",
+			}})
+		} else if errors.As(err, &notAssignedErr) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: ErrorBody{
+				Code:    NOT_ASSIGNED,
+				Message: "reviewer is not assigned to this PR",
+			}})
+		} else if errors.As(err, &noCandidateErr) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: ErrorBody{
+				Code:    NO_CANDIDATE,
+				Message: "no active replacement candidate in team",
+			}})
+		} else if errors.As(err, &userNotFoundErr) || strings.Contains(err.Error(), "not found") {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+				Code:    NOT_FOUND,
+				Message: err.Error(),
+			}})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: ErrorBody{
+				Code:    UNHANDLED_SERVER_ERROR,
+				Message: err.Error(),
+			}})
+		}
+		return
+	}
+
+	responsePR := PullRequestResponse{
+		PullRequestID:     pr.ID,
+		PullRequestName:   pr.Name,
+		AuthorID:          pr.AuthorID,
+		Status:            string(pr.Status),
+		AssignedReviewers: pr.AssignedReviewers,
+	}
+
+	if pr.CreatedAt != nil {
+		createdAtStr := pr.CreatedAt.Format(time.RFC3339)
+		responsePR.CreatedAt = &createdAtStr
+	}
+	if pr.MergedAt != nil {
+		mergedAtStr := pr.MergedAt.Format(time.RFC3339)
+		responsePR.MergedAt = &mergedAtStr
+	}
+
+	c.JSON(http.StatusOK, ReassignReviewerResponse{
+		PR:         responsePR,
+		ReplacedBy: newReviewerID,
+	})
+}
+
+type MergePullRequestRequest struct {
+	PullRequestID string `json:"pull_request_id" binding:"required"`
+}
+
+func (s *GinService) MergePullRequest(c *gin.Context) {
+	ctx := context.Background()
+
+	var req MergePullRequestRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: err.Error(),
+		}})
+		return
+	}
+
+	pr, err := s.srv.MergePullRequest(ctx, req.PullRequestID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+				Code:    NOT_FOUND,
+				Message: err.Error(),
+			}})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: ErrorBody{
+				Code:    UNHANDLED_SERVER_ERROR,
+				Message: err.Error(),
+			}})
+		}
+		return
+	}
+
+	responsePR := PullRequestResponse{
+		PullRequestID:     pr.ID,
+		PullRequestName:   pr.Name,
+		AuthorID:          pr.AuthorID,
+		Status:            string(pr.Status),
+		AssignedReviewers: pr.AssignedReviewers,
+	}
+
+	if pr.CreatedAt != nil {
+		createdAtStr := pr.CreatedAt.Format(time.RFC3339)
+		responsePR.CreatedAt = &createdAtStr
+	}
+	if pr.MergedAt != nil {
+		mergedAtStr := pr.MergedAt.Format(time.RFC3339)
+		responsePR.MergedAt = &mergedAtStr
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"pr": responsePR,
 	})
 }

@@ -14,6 +14,8 @@ func Run(s *service.Service) {
 	r.GET("/team/get", gs.TeamGet)
 	r.POST("/users/setIsActive", gs.SetUserIsActive)
 	r.POST("/pullRequest/create", gs.CreatePullRequest)
+	r.POST("/pullRequest/reassign", gs.ReassignReviewer)
+	r.POST("/pullRequest/merge", gs.MergePullRequest)
 
 	r.Run()
 }
