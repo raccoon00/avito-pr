@@ -395,3 +395,61 @@ func (s *GinService) MergePullRequest(c *gin.Context) {
 		"pr": responsePR,
 	})
 }
+
+type PullRequestShortResponse struct {
+	PullRequestID   string `json:"pull_request_id"`
+	PullRequestName string `json:"pull_request_name"`
+	AuthorID        string `json:"author_id"`
+	Status          string `json:"status"`
+}
+
+type GetUserReviewsResponse struct {
+	UserID       string                     `json:"user_id"`
+	PullRequests []PullRequestShortResponse `json:"pull_requests"`
+}
+
+func (s *GinService) GetUserReviews(c *gin.Context) {
+	ctx := context.Background()
+
+	userID := c.Query("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: "user_id query parameter is required",
+		}})
+		return
+	}
+
+	prs, err := s.srv.GetUserReviews(ctx, userID)
+	if err != nil {
+		var userNotFoundErr *domain.UserNotFoundError
+		if errors.As(err, &userNotFoundErr) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+				Code:    NOT_FOUND,
+				Message: err.Error(),
+			}})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: ErrorBody{
+				Code:    UNHANDLED_SERVER_ERROR,
+				Message: err.Error(),
+			}})
+		}
+		return
+	}
+
+	response := GetUserReviewsResponse{
+		UserID:       userID,
+		PullRequests: make([]PullRequestShortResponse, 0, len(prs)),
+	}
+
+	for _, pr := range prs {
+		response.PullRequests = append(response.PullRequests, PullRequestShortResponse{
+			PullRequestID:   pr.ID,
+			PullRequestName: pr.Name,
+			AuthorID:        pr.AuthorID,
+			Status:          string(pr.Status),
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}

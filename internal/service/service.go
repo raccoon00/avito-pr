@@ -107,6 +107,22 @@ func (s *Service) ReassignReviewer(ctx context.Context, prID, oldUserID string) 
 	return updatedPR, newReviewer.Id, nil
 }
 
+func (s *Service) GetUserReviews(ctx context.Context, userID string) ([]domain.PullRequest, error) {
+	// Check if user exists
+	_, err := s.UserRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, &domain.UserNotFoundError{UserID: userID}
+	}
+
+	// Get PRs where user is assigned as reviewer
+	prs, err := s.PRRepo.GetByReviewer(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return prs, nil
+}
+
 func (s *Service) MergePullRequest(ctx context.Context, prID string) (*domain.PullRequest, error) {
 	// Get the pull request
 	pr, err := s.PRRepo.GetByID(ctx, prID)

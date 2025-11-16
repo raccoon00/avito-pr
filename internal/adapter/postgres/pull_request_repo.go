@@ -138,3 +138,42 @@ func (p *PostgresPullRequestTable) Update(ctx context.Context, pr *domain.PullRe
 	updatedPR.Status = domain.PullRequestStatus(status)
 	return &updatedPR, nil
 }
+
+func (p *PostgresPullRequestTable) GetByReviewer(ctx context.Context, userID string) ([]domain.PullRequest, error) {
+	selectQuery := fmt.Sprintf(
+		"SELECT pull_request_id, pull_request_name, author_id, status, assigned_reviewers, created_at, merged_at FROM %s WHERE $1 = ANY(assigned_reviewers) ORDER BY created_at DESC",
+		p.PRTable,
+	)
+
+	rows, err := p.Conn.Query(ctx, selectQuery, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error querying PRs by reviewer: %w", err)
+	}
+	defer rows.Close()
+
+	var prs []domain.PullRequest
+	for rows.Next() {
+		var pr domain.PullRequest
+		var status string
+		err := rows.Scan(
+			&pr.ID,
+			&pr.Name,
+			&pr.AuthorID,
+			&status,
+			&pr.AssignedReviewers,
+			&pr.CreatedAt,
+			&pr.MergedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning pull request: %w", err)
+		}
+		pr.Status = domain.PullRequestStatus(status)
+		prs = append(prs, pr)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating pull requests: %w", err)
+	}
+
+	return prs, nil
+}
