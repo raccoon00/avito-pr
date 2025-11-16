@@ -14,4 +14,11 @@ type TeamRepository interface {
 type UserRepository interface {
 	SetIsActive(ctx context.Context, userID string, isActive bool) (*domain.User, error)
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
+	GetActiveTeamMembers(ctx context.Context, teamName string, excludeUserID string) ([]domain.User, error)
+}
+
+type PullRequestRepository interface {
+	Create(ctx context.Context, pr *domain.PullRequest) (*domain.PullRequest, error)
+	GetByID(ctx context.Context, prID string) (*domain.PullRequest, error)
+	Exists(ctx context.Context, prID string) (bool, error)
 }

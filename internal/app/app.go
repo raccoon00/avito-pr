@@ -23,7 +23,8 @@ func Run() {
 
 	team_repo := postgres.NewTeamRepo(conn, "teams", "users")
 	user_repo := postgres.NewUserRepo(conn, "users")
-	srv := service.CreateService(team_repo, user_repo)
+	pr_repo := postgres.NewPullRequestRepo(conn, "pr_requests")
+	srv := service.CreateService(team_repo, user_repo, pr_repo)
 
 	http.Run(srv)
 }

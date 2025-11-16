@@ -13,6 +13,7 @@ func Run(s *service.Service) {
 	r.POST("/team/add", gs.TeamAdd)
 	r.GET("/team/get", gs.TeamGet)
 	r.POST("/users/setIsActive", gs.SetUserIsActive)
+	r.POST("/pullRequest/create", gs.CreatePullRequest)
 
 	r.Run()
 }

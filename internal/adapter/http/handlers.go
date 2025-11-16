@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/raccoon00/avito-pr/internal/domain"
@@ -182,5 +183,80 @@ func (s *GinService) SetUserIsActive(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": responseUser,
+	})
+}
+
+type CreatePullRequestRequest struct {
+	PullRequestID   string `json:"pull_request_id" binding:"required"`
+	PullRequestName string `json:"pull_request_name" binding:"required"`
+	AuthorID        string `json:"author_id" binding:"required"`
+}
+
+type PullRequestResponse struct {
+	PullRequestID     string   `json:"pull_request_id"`
+	PullRequestName   string   `json:"pull_request_name"`
+	AuthorID          string   `json:"author_id"`
+	Status            string   `json:"status"`
+	AssignedReviewers []string `json:"assigned_reviewers"`
+	CreatedAt         *string  `json:"createdAt,omitempty"`
+	MergedAt          *string  `json:"mergedAt,omitempty"`
+}
+
+func (s *GinService) CreatePullRequest(c *gin.Context) {
+	ctx := context.Background()
+
+	var req CreatePullRequestRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: err.Error(),
+		}})
+		return
+	}
+
+	pr, err := s.srv.CreatePullRequest(ctx, req.PullRequestID, req.PullRequestName, req.AuthorID)
+	if err != nil {
+		var prExistsErr *domain.PullRequestExistsError
+		var authorNotFoundErr *domain.AuthorNotFoundError
+		var teamNotFoundErr *domain.TeamNotFoundError
+
+		if errors.As(err, &prExistsErr) {
+			c.JSON(http.StatusConflict, ErrorResponse{Error: ErrorBody{
+				Code:    PR_EXISTS,
+				Message: fmt.Sprintf("PR id %s already exists", req.PullRequestID),
+			}})
+		} else if errors.As(err, &authorNotFoundErr) || errors.As(err, &teamNotFoundErr) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+				Code:    NOT_FOUND,
+				Message: err.Error(),
+			}})
+		} else {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: ErrorBody{
+				Code:    UNHANDLED_SERVER_ERROR,
+				Message: err.Error(),
+			}})
+		}
+		return
+	}
+
+	responsePR := PullRequestResponse{
+		PullRequestID:     pr.ID,
+		PullRequestName:   pr.Name,
+		AuthorID:          pr.AuthorID,
+		Status:            string(pr.Status),
+		AssignedReviewers: pr.AssignedReviewers,
+	}
+
+	if pr.CreatedAt != nil {
+		createdAtStr := pr.CreatedAt.Format(time.RFC3339)
+		responsePR.CreatedAt = &createdAtStr
+	}
+	if pr.MergedAt != nil {
+		mergedAtStr := pr.MergedAt.Format(time.RFC3339)
+		responsePR.MergedAt = &mergedAtStr
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"pr": responsePR,
 	})
 }
