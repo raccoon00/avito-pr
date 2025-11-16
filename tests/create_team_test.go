@@ -11,31 +11,11 @@ import (
 	"testing"
 )
 
-type Team struct {
-	Name    string       `json:"team_name"`
-	Members []TeamMember `json:"members"`
-}
-
-type TeamMember struct {
-	Id     string `json:"user_id"`
-	Name   string `json:"username"`
-	Active bool   `json:"is_active"`
-}
-
-type OKResponse struct {
-	Team Team `json:"team"`
-}
-
-type ErrorResponse struct {
-	Error   string `json:"code"`
-	Message string `json:"message"`
-}
-
 func processAddResponse(
 	t *testing.T,
 	resp *http.Response,
 	err error,
-) (int, *OKResponse, *ErrorResponse) {
+) (int, *Team, *ErrorResponse) {
 	if err != nil {
 		t.Logf("Error when sending post: %v\n", err)
 		t.FailNow()
@@ -56,15 +36,15 @@ func processAddResponse(
 			t.FailNow()
 		}
 
-		return resp.StatusCode, &respTeam, nil
+		return resp.StatusCode, &respTeam.Team, nil
 	} else {
-		var respErr ErrorResponse
-		err = json.Unmarshal(bodyBytes, &respErr)
+		var errorResp ErrorResponse
+		err = json.Unmarshal(bodyBytes, &errorResp)
 		if err != nil {
 			t.Log("Failed to unmarshal response, unknown format")
 			t.FailNow()
 		}
-		return resp.StatusCode, nil, &respErr
+		return resp.StatusCode, nil, &errorResp
 	}
 }
 
@@ -74,7 +54,7 @@ func TestTeamAdd(t *testing.T) {
 	testTeam := Team{
 		Name: "Team A",
 		Members: []TeamMember{
-			{Id: "u1", Name: "Bob", Active: true},
+			{Id: "u1", Name: "Bob", IsActive: true},
 		},
 	}
 
@@ -93,10 +73,10 @@ func TestTeamAdd(t *testing.T) {
 	}
 
 	if sc == http.StatusCreated {
-		if !reflect.DeepEqual(testTeam, respOk.Team) {
+		if !reflect.DeepEqual(testTeam, *respOk) {
 			t.Log("The returned team is not equal to the requested")
 			sentTeam, _ := json.MarshalIndent(testTeam, "", "  ")
-			recTeam, _ := json.MarshalIndent(respOk.Team, "", "  ")
+			recTeam, _ := json.MarshalIndent(*respOk, "", "  ")
 			t.Logf("\nsent:\n%v\n\nreceived:\n%v\n", string(sentTeam), string(recTeam))
 			t.FailNow()
 		}

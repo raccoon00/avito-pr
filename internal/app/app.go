@@ -22,7 +22,8 @@ func Run() {
 	defer conn.Close()
 
 	team_repo := postgres.NewTeamRepo(conn, "teams", "users")
-	srv := service.CreateService(team_repo)
+	user_repo := postgres.NewUserRepo(conn, "users")
+	srv := service.CreateService(team_repo, user_repo)
 
 	http.Run(srv)
 }

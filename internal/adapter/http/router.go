@@ -11,6 +11,8 @@ func Run(s *service.Service) {
 	gs := GinService{srv: s}
 
 	r.POST("/team/add", gs.TeamAdd)
+	r.GET("/team/get", gs.TeamGet)
+	r.POST("/users/setIsActive", gs.SetUserIsActive)
 
 	r.Run()
 }

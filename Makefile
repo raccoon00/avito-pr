@@ -1,4 +1,4 @@
-ENV_FILE?=.env
+ENV_FILE?=.env.example
 include $(ENV_FILE)
 export
 

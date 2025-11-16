@@ -70,3 +70,41 @@ func (t *PostgresTeamTable) Create(ctx context.Context, team *domain.Team) (*dom
 
 	return &newTeam, nil
 }
+
+func (t *PostgresTeamTable) Get(ctx context.Context, teamName string) (*domain.Team, error) {
+	checkTeamQuery := fmt.Sprintf("SELECT team_name FROM %s WHERE team_name = $1", t.TeamTable)
+	row := t.Conn.QueryRow(ctx, checkTeamQuery, teamName)
+
+	var teamNameFromDB string
+	err := row.Scan(&teamNameFromDB)
+	if err != nil {
+		return nil, fmt.Errorf("team not found: %w", err)
+	}
+
+	getUsersQuery := fmt.Sprintf("SELECT user_id, username, is_active, team_name FROM %s WHERE team_name = $1", t.UsersTable)
+	rows, err := t.Conn.Query(ctx, getUsersQuery, teamName)
+	if err != nil {
+		return nil, fmt.Errorf("error querying users for team: %w", err)
+	}
+	defer rows.Close()
+
+	team := &domain.Team{
+		Name:    teamName,
+		Members: []domain.User{},
+	}
+
+	for rows.Next() {
+		var user domain.User
+		err := rows.Scan(&user.Id, &user.Name, &user.IsActive, &user.Team)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning user: %w", err)
+		}
+		team.Members = append(team.Members, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %w", err)
+	}
+
+	return team, nil
+}

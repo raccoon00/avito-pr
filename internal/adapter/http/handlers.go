@@ -40,9 +40,13 @@ type Member struct {
 	IsActive bool   `json:"is_active" binding:"required"`
 }
 
-type ErrorResponse struct {
+type ErrorBody struct {
 	Code    ErrorCode `json:"code" binding:"required"`
 	Message string    `json:"message" binding:"required"`
+}
+
+type ErrorResponse struct {
+	Error ErrorBody `json:"error"`
 }
 
 func (s *GinService) TeamAdd(c *gin.Context) {
@@ -50,10 +54,10 @@ func (s *GinService) TeamAdd(c *gin.Context) {
 
 	var team Team
 	if err := c.ShouldBind(&team); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
 			Code:    BAD_REQUEST,
 			Message: err.Error(),
-		})
+		}})
 		return
 	}
 
@@ -66,15 +70,15 @@ func (s *GinService) TeamAdd(c *gin.Context) {
 	if err != nil {
 		var errTeamExits *domain.TeamExistsError
 		if errors.As(err, &errTeamExits) {
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
 				Code:    TEAM_EXISTS,
 				Message: fmt.Sprintf("Team %s already exists", newTeam.Name),
-			})
+			}})
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: ErrorBody{
 				Code:    UNHANDLED_SERVER_ERROR,
 				Message: err.Error(),
-			})
+			}})
 		}
 		return
 	}
@@ -94,5 +98,89 @@ func (s *GinService) TeamAdd(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"team": createdTeam,
+	})
+}
+
+func (s *GinService) TeamGet(c *gin.Context) {
+	ctx := context.Background()
+
+	teamName := c.Query("team_name")
+	if teamName == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: "team_name query parameter is required",
+		}})
+		return
+	}
+
+	team, err := s.srv.GetTeam(ctx, teamName)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+			Code:    NOT_FOUND,
+			Message: fmt.Sprintf("Team %s not found", teamName),
+		}})
+		return
+	}
+
+	responseTeam := Team{
+		Name:    team.Name,
+		Members: make([]Member, 0, len(team.Members)),
+	}
+
+	for _, member := range team.Members {
+		responseTeam.Members = append(responseTeam.Members, Member{
+			Id:       member.Id,
+			Name:     member.Name,
+			IsActive: member.IsActive,
+		})
+	}
+
+	c.JSON(http.StatusOK, responseTeam)
+}
+
+type SetUserIsActiveRequest struct {
+	UserID string `json:"user_id" binding:"required"`
+	// Ссылка на bool потому что gin не понимает разницу между
+	// false и отсутствующим значением
+	IsActive *bool `json:"is_active" binding:"required"`
+}
+
+type UserResponse struct {
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+	TeamName string `json:"team_name"`
+	IsActive bool   `json:"is_active"`
+}
+
+func (s *GinService) SetUserIsActive(c *gin.Context) {
+	ctx := context.Background()
+
+	var req SetUserIsActiveRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: ErrorBody{
+			Code:    BAD_REQUEST,
+			Message: err.Error(),
+		}})
+		return
+	}
+
+	user, err := s.srv.SetUserIsActive(ctx, req.UserID, *req.IsActive)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: ErrorBody{
+			Code:    NOT_FOUND,
+			Message: fmt.Sprintf("User %s not found", req.UserID),
+		}})
+		return
+	}
+
+	responseUser := UserResponse{
+		UserID:   user.Id,
+		Username: user.Name,
+		TeamName: user.Team,
+		IsActive: user.IsActive,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": responseUser,
 	})
 }
