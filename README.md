@@ -93,3 +93,47 @@ avito-pr/
 - `POST /pullRequest/reassign` - Переназначение ревьювера
 - `POST /pullRequest/merge` - Мердж PR (идемпотентная операция)
 - `GET /users/getReview` - Получение PR, назначенных пользователю для ревью
+
+
+## Дополнительные задания
+
+### Нагрузочное тестирование
+
+Для нагрузочного тестирования используется отдельный пакет `stress/stress.go`. Тестирование проводилось с параметрами:
+- Длительность теста: 30 секунд
+- Конкурентность: 10 воркеров
+- Целевой RPS: 5 (требование задания)
+
+#### Результаты нагрузочного тестирования
+
+```
+Stress Test Results:
+Test                     Requests    Success   Errors      RPS  Avg Latency  P95 Latency  P99 Latency
+--------------------------------------------------------------------------------------------
+Create PR                    3887     100.0%        0    775.7          4ms          3ms          3ms
+Reassign Reviewer             940     100.0%        0    186.8          3ms          3ms          4ms
+Get Team                     7420     100.0%        0   1482.0          2ms          2ms          1ms
+2025/11/16 22:50:35
+Requirements Check
+2025/11/16 22:50:35 OK: Create PR: Average latency 4ms meets 300ms requirement
+2025/11/16 22:50:35 OK: Create PR: Success rate 100.00% meets 99.9% requirement
+2025/11/16 22:50:35 OK: Reassign Reviewer: Average latency 3ms meets 300ms requirement
+2025/11/16 22:50:35 OK: Reassign Reviewer: Success rate 100.00% meets 99.9% requirement
+2025/11/16 22:50:35 OK: Get Team: Average latency 2ms meets 300ms requirement
+2025/11/16 22:50:35 OK: Get Team: Success rate 100.00% meets 99.9% requirement
+```
+
+#### Запуск нагрузочного тестирования
+
+```bash
+# Сборка и запуск теста
+go build -o bin/stress ./stress
+./bin/stress
+
+# Или автоматически
+make auto_stress
+```
+
+Все эндпоинты сервиса успешно проходят нагрузочное тестирование и соответствуют требованиям SLI:
+- Время ответа ≤300ms
+- Успешность ≥99.9%
