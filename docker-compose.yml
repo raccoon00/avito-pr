@@ -2,11 +2,12 @@ services:
   db:
     image: docker.io/library/postgres:18.1
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-example}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_DB: ${DB_NAME:-prs}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test:
+        ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-prs}"]
       interval: 1s
       retries: 5
       timeout: 5s
@@ -23,7 +24,7 @@ services:
         "-path",
         "/migrations",
         "-database",
-        "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+        "postgres://${DB_USER:-postgres}:${DB_PASSWORD:-example}@db:5432/${DB_NAME:-prs}?sslmode=disable",
         "up",
       ]
 
@@ -36,6 +37,6 @@ services:
     ports:
       - 8080:8080
     environment:
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_USER: ${DB_USER}
-      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD:-example}
+      DB_USER: ${DB_USER:-postgres}
+      DB_NAME: ${DB_NAME:-prs}

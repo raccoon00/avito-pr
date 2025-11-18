@@ -19,7 +19,7 @@ func Load() *Config {
 	return &Config{
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "example"),
-		DBName:     getEnv("DB_NAME", "initdb"),
+		DBName:     getEnv("DB_NAME", "prs"),
 	}
 }
 

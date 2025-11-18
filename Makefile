@@ -17,7 +17,7 @@ run: build
 logs:
 	docker compose logs -f
 
-test: run
+test:
 	go test -count=1 ./tests
 
 stress:
